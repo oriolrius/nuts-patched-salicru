@@ -35,6 +35,7 @@ cat > /etc/nut/upsd.conf <<EOF
 LISTEN ${LISTEN_ADDR} ${LISTEN_PORT}
 MAXAGE 20
 EOF
+chmod 0640 /etc/nut/upsd.conf
 
 # upsd.users — reads are anonymous; a user is only needed for SET/commands.
 if [ -n "${ADMIN_USER}" ] && [ -n "${ADMIN_PASSWORD}" ]; then
@@ -51,7 +52,7 @@ chmod 0640 /etc/nut/upsd.users
 
 echo "[entrypoint] starting ${UPS_DRIVER} for [${UPS_NAME}] (${VENDORID}:${PRODUCTID})"
 # -u root: container is isolated; avoids USB permission juggling.
-/usr/local/bin/upsdrvctl -u root start
+/usr/local/sbin/upsdrvctl -u root start
 
 # Give the driver a moment to populate state before upsd answers clients.
 sleep 2
