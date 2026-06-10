@@ -50,7 +50,7 @@ LABEL org.opencontainers.image.title="nuts-patched-salicru" \
       org.opencontainers.image.licenses="GPL-2.0-or-later"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libusb-1.0-0 libssl3 \
+        libusb-1.0-0 libssl3 util-linux \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /staging/usr/local /usr/local

@@ -1,31 +1,36 @@
 name: nut-salicru
 
 # Deployment on nas1 (QNAP Container Station). The patched NUT owns the UPS
-# USB device and serves upsd on :3493. PeaNUT and the QNAP (in network-client
-# mode) connect to it.
+# USB device and serves upsd on :3493. PeaNUT connects to it for telemetry.
 #
-# Prereq: QTS native UPS driver must NOT hold the USB device (set QTS UPS to
-# "network client" mode first — see README "Production cutover").
+# Because QNAP's QTS won't act as a NUT network-slave while a USB UPS is on the
+# bus, this stack also runs upsmon INSIDE the container and powers off the host
+# on a critical-battery event (SHUTDOWN_ENABLE). That needs pid:host + privileged
+# so nsenter can reach the host's /sbin/poweroff.
+#
+# Prereq: disable QNAP's native UPS subsystem so it stops contending for the USB
+# (Control Panel UPS off, or `setcfg UPS Enable FALSE` + stop upsutil).
 
 services:
   nut:
     image: ghcr.io/oriolrius/nuts-patched-salicru:latest
     container_name: nut-salicru
     restart: unless-stopped
-    # USB HID access: pass the whole USB bus through. usbhid-ups uses libusb
-    # and re-binds by vendor/product id, so the device path may float.
     privileged: true
+    pid: host                       # so nsenter -t 1 can shut down the host
     volumes:
       - /dev/bus/usb:/dev/bus/usb
     ports:
       - "3493:3493"
     environment:
-      UPS_NAME: salicru
+      UPS_NAME: qnapups
       UPS_DESC: "Salicru SLC-1500-TWIN PRO2"
       VENDORID: "06da"
       PRODUCTID: "ffff"
       LISTEN_ADDR: "0.0.0.0"
       LISTEN_PORT: "3493"
-      # Optional: enable battery-test / beeper commands.
-      # ADMIN_USER: admin
-      # ADMIN_PASSWORD: change-me
+      ADMIN_USER: admin
+      ADMIN_PASSWORD: "123456"
+      # Power off nas1 when the UPS hits critical battery during a long outage.
+      SHUTDOWN_ENABLE: "true"
+      SHUTDOWN_CMD: "nsenter -t 1 -m -u -i -n -p -- /sbin/poweroff"

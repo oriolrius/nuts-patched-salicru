@@ -53,9 +53,20 @@ Or `docker compose up -d` with the bundled `docker-compose.yml`.
 | `VENDORID` / `PRODUCTID` | `06da` / `ffff` | USB match |
 | `LISTEN_ADDR` / `LISTEN_PORT` | `0.0.0.0` / `3493` | upsd bind |
 | `POLLINTERVAL` | `2` | driver poll seconds |
-| `ADMIN_USER` / `ADMIN_PASSWORD` | _(unset)_ | optional account for SET / battery test / beeper |
+| `ADMIN_USER` / `ADMIN_PASSWORD` | _(unset)_ | account for SET / battery test / beeper / upsmon login |
+| `SHUTDOWN_ENABLE` | `false` | run upsmon in-container to power off the host on critical battery |
+| `SHUTDOWN_CMD` | `nsenter -t 1 -m -u -i -n -p -- /sbin/poweroff` | host-shutdown command (needs `pid: host` + `privileged`) |
 
 Reads (`upsc`) need no auth; only SET/instant-commands require the admin account.
+
+### Host shutdown for appliances that can't be a NUT slave
+
+Some NAS firmwares (e.g. QNAP QTS) refuse to act as a NUT network-slave while a
+USB UPS is present, and reclaim the USB on boot. For those, disable the NAS's
+native UPS subsystem and let this container both own the USB **and** trigger the
+host shutdown: set `SHUTDOWN_ENABLE=true`, add `pid: host` + `privileged`, and an
+`upsmon` inside the container will run `SHUTDOWN_CMD` (via `nsenter` into the host
+namespaces) when the UPS reaches critical battery. See `docker-compose.yml`.
 
 ## Deploy on nas1 (QNAP) — production cutover
 
