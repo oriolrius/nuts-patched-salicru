@@ -37,13 +37,16 @@ MAXAGE 20
 EOF
 chmod 0640 /etc/nut/upsd.conf
 
-# upsd.users — reads are anonymous; a user is only needed for SET/commands.
+# upsd.users — reads are anonymous. A user is needed for SET/instant-commands
+# (PeaNUT battery test / beeper) and for an upstream NUT slave (e.g. a QNAP in
+# network-client mode) to LOGIN and receive forced-shutdown (FSD) signals.
 if [ -n "${ADMIN_USER}" ] && [ -n "${ADMIN_PASSWORD}" ]; then
 cat > /etc/nut/upsd.users <<EOF
 [${ADMIN_USER}]
     password = ${ADMIN_PASSWORD}
     actions = SET
     instcmds = ALL
+    upsmon master
 EOF
 else
     : > /etc/nut/upsd.users
