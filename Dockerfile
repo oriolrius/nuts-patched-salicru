@@ -14,20 +14,22 @@ ARG NUT_VERSION=2.8.5
 FROM debian:bookworm-slim AS build
 ARG NUT_VERSION
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential autoconf automake libtool pkg-config \
-        libusb-1.0-0-dev libssl-dev git ca-certificates curl patch \
+        build-essential pkg-config \
+        libusb-1.0-0-dev libssl-dev ca-certificates curl patch \
     && rm -rf /var/lib/apt/lists/*
 
+# Use the official release tarball: it ships a pre-generated ./configure, so we
+# avoid autogen.sh (which needs Python and full git history for versioning).
 WORKDIR /src
-RUN git clone --branch v${NUT_VERSION} --depth 1 https://github.com/networkupstools/nut.git .
+RUN curl -fsSL "https://github.com/networkupstools/nut/releases/download/v${NUT_VERSION}/nut-${NUT_VERSION}.tar.gz" \
+        | tar xz --strip-components=1
 
 # Apply the Salicru power-mapping patch (fail the build if it does not apply).
 COPY patches/0001-liebert-hid-salicru-power.patch /tmp/
-RUN git apply --verbose /tmp/0001-liebert-hid-salicru-power.patch \
+RUN patch -p1 < /tmp/0001-liebert-hid-salicru-power.patch \
     && grep -q '0.41-salicru1' drivers/liebert-hid.c
 
-RUN ./autogen.sh \
-    && ./configure \
+RUN ./configure \
         --prefix=/usr/local \
         --sysconfdir=/etc/nut \
         --with-statepath=/var/run/nut \
