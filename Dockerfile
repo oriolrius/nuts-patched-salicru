@@ -35,7 +35,7 @@ RUN ./configure \
         --with-statepath=/var/run/nut \
         --with-user=root --with-group=root \
         --with-usb=yes \
-        --with-drivers=usbhid-ups \
+        --with-drivers=usbhid-ups,dummy-ups \
         --without-snmp --without-neon --without-modbus \
         --without-cgi --without-dev --without-doc \
         --disable-static \
